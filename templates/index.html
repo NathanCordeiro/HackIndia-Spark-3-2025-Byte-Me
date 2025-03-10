@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkyRoute - Optimal Flight Path Finder</title>
+    <link rel="icon" type="image/x-icon" href="../image/plane.png">
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <!-- Leaflet.js (Open-source Maps) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- GSAP and ScrollTrigger -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <!-- AOS (Animate On Scroll) -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --primary-color: #4a6cfa;
+            --secondary-color: #f0f4ff;
+            --text-color: #333;
+            --light-gray: #f5f7fa;
+            --border-radius: 12px;
+            --box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            color: var(--text-color);
+            overflow-x: hidden;
+            background-color: #fff;
+        }
+
+        /* Navigation */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 5%;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            transition: all 0.3s ease;
+            background-color: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+
+        .navbar.scrolled {
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            padding: 1rem 5%;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+        }
+
+        .nav-links li {
+            margin-left: 2rem;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-color);
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary-color);
+        }
+
+        .menu-toggle {
+            display: none;
+            cursor: pointer;
+            font-size: 1.5rem;
+        }
+
+        /* Hero Section */
+        .hero {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            padding: 0 5%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-content {
+            max-width: 600px;
+            padding-top: 5rem;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            line-height: 1.2;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+            color: #666;
+        }
+
+        .hero-btn {
+            display: inline-block;
+            padding: 0.8rem 2rem;
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 5px 15px rgba(74, 108, 250, 0.3);
+        }
+
+        .hero-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(74, 108, 250, 0.4);
+        }
+
+        .hero-image {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 45%;
+            opacity: 0;
+        }
+
+        /* Features Section */
+        .features {
+            padding: 6rem 5%;
+            background-color: var(--light-gray);
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .section-title h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .section-title p {
+            font-size: 1.1rem;
+            color: #666;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .feature-card {
+            background-color: white;
+            padding: 2rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+        }
+
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            background-color: var(--secondary-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+            color: var(--primary-color);
+            font-size: 1.5rem;
+        }
+
+        .feature-card h3 {
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+        }
+
+        .feature-card p {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        /* Flight Finder Section */
+        .flight-finder {
+            padding: 6rem 5%;
+            text-align: center;
+        }
+
+        .finder-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            padding: 2rem;
+            overflow: hidden;
+        }
+
+        .flight-selectors {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .flight-selector {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .flight-selector label {
+            display: block;
+            text-align: left;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        select,
+        button {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 1rem;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #3a5cd8;
+        }
+
+        #output {
+            margin: 1.5rem 0;
+            font-size: 1.1rem;
+            font-weight: 500;
+            min-height: 2rem;
+        }
+
+        #map {
+            width: 100%;
+            height: 500px;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+        }
+
+        /* Testimonials Section */
+        .testimonials {
+            padding: 6rem 5%;
+            background-color: var(--light-gray);
+        }
+
+        .testimonial-slider {
+            max-width: 900px;
+            margin: 0 auto;
+            overflow: hidden;
+        }
+
+        .testimonial {
+            padding: 2rem;
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            margin: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .testimonial-content {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+            color: #555;
+        }
+
+        .testimonial-author {
+            display: flex;
+            align-items: center;
+        }
+
+        .author-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: #ddd;
+            margin-right: 1rem;
+            overflow: hidden;
+        }
+
+        .author-info h4 {
+            margin-bottom: 0.2rem;
+        }
+
+        .author-info p {
+            color: #777;
+            font-size: 0.9rem;
+        }
+
+        /* Footer */
+        footer {
+            padding: 3rem 5%;
+            background-color: #fff;
+            text-align: center;
+            border-top: 1px solid #eee;
+        }
+
+        .footer-content {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 2rem 0;
+        }
+
+        .footer-links a {
+            margin: 0 1rem;
+            text-decoration: none;
+            color: var(--text-color);
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: var(--primary-color);
+        }
+
+        .social-icons {
+            margin-bottom: 2rem;
+        }
+
+        .social-icons a {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            background-color: var(--secondary-color);
+            color: var(--primary-color);
+            border-radius: 50%;
+            line-height: 40px;
+            margin: 0 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .social-icons a:hover {
+            background-color: var(--primary-color);
+            color: white;
+            transform: translateY(-3px);
+        }
+
+        .copyright {
+            color: #777;
+            font-size: 0.9rem;
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 992px) {
+            .hero h1 {
+                font-size: 2.8rem;
+            }
+
+            .hero-image {
+                width: 40%;
+                opacity: 0.7;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 1rem 5%;
+            }
+
+            .menu-toggle {
+                display: block;
+            }
+
+            .nav-links {
+                position: absolute;
+                top: 100%;
+                left: 0;
+                width: 100%;
+                background-color: white;
+                flex-direction: column;
+                align-items: center;
+                padding: 1rem 0;
+                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+                transform: translateY(-100%);
+                opacity: 0;
+                pointer-events: none;
+                transition: all 0.3s ease;
+            }
+
+            .nav-links.active {
+                transform: translateY(0);
+                opacity: 1;
+                pointer-events: all;
+            }
+
+            .nav-links li {
+                margin: 1rem 0;
+            }
+
+            .hero {
+                flex-direction: column;
+                text-align: center;
+                padding-top: 6rem;
+            }
+
+            .hero-content {
+                max-width: 100%;
+                padding-top: 2rem;
+            }
+
+            .hero h1 {
+                font-size: 2.3rem;
+            }
+
+            .hero-image {
+                position: relative;
+                top: 0;
+                transform: none;
+                width: 50%;
+                height: auto;
+                margin-top: 2rem;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .flight-selector {
+                min-width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .hero p {
+                font-size: 1rem;
+            }
+
+            .section-title h2 {
+                font-size: 2rem;
+            }
+        }
+
+        /* Animation Classes */
+        .fade-up {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        .fade-in {
+            opacity: 0;
+        }
+
+        .slide-in-left {
+            opacity: 0;
+            transform: translateX(-50px);
+        }
+
+        .slide-in-right {
+            opacity: 0;
+            transform: translateX(50px);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <a href="#" class="logo">SkyRoute</a>
+        <div class="menu-toggle">
+            <i class="fas fa-bars"></i>
+        </div>
+        <ul class="nav-links">
+            <li><a href="#home">Home</a></li>
+            <li><a href="#features">Features</a></li>
+            <li><a href="#flight-finder">Flight Finder</a></li>
+            <li><a href="#testimonials">Testimonials</a></li>
+            <li><a href="#contact">Contact</a></li>
+        </ul>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero" id="home">
+        <div class="hero-content">
+            <h1 class="fade-up">Find Your Optimal Flight Path</h1>
+            <p class="fade-up">Discover the fastest routes between airports with our advanced algorithm and interactive
+                map visualization.</p>
+            <a href="#flight-finder" class="hero-btn fade-up">Try It Now</a>
+        </div>
+        <img src="https://static.vecteezy.com/system/resources/previews/000/431/081/original/vector-earth-globe-and-airplane.jpg"
+            alt="Flight Map Illustration" class="hero-image fade-in">
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <div class="section-title">
+            <h2>Why Choose SkyRoute</h2>
+            <p>Our flight route finder offers unique features to help you plan
+                the most efficient journey.</p>
+        </div>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-route"></i>
+                </div>
+                <h3>Optimal Routing</h3>
+                <p>Our algorithm analyzes multiple factors to determine the most efficient flight path between any two
+                    airports.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-map-marked-alt"></i>
+                </div>
+                <h3>Interactive Maps</h3>
+                <p>Visualize your flight routes with our interactive maps powered by the latest mapping technology.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <h3>Time Savings</h3>
+                <p>Save valuable time by identifying the fastest routes for your journey, avoiding unnecessary layovers.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Flight Finder Section -->
+    <section class="flight-finder" id="flight-finder">
+        <div class="section-title">
+            <h2 data-aos="fade-up">Find the Optimal Flight Route</h2>
+            <p data-aos="fade-up" data-aos-delay="100">Select your departure and arrival airports to discover the best
+                route.</p>
+        </div>
+        <div class="finder-container" data-aos="zoom-in" data-aos-delay="200">
+            <div class="flight-selectors">
+                <div class="flight-selector">
+                    <label>Source Airport:</label>
+                    <select id="source">
+                        <option value="DEL">DEL - Indira Gandhi International Airport, Delhi</option>
+                        <option value="BOM">BOM - Chhatrapati Shivaji Maharaj International Airport, Mumbai</option>
+                        <option value="MAA">MAA - Chennai International Airport</option>
+                        <option value="BLR">BLR - Kempegowda International Airport, Bangalore</option>
+                        <option value="HYD">HYD - Rajiv Gandhi International Airport, Hyderabad</option>
+                        <option value="CCU">CCU - Netaji Subhas Chandra Bose International Airport, Kolkata</option>
+                        <option value="PNQ">PNQ - Pune International Airport</option>
+                        <option value="AMD">AMD - Sardar Vallabhbhai Patel International Airport, Ahmedabad</option>
+                        <option value="COK">COK - Cochin International Airport</option>
+                        <option value="GOI">GOI - Manohar International Airport, Goa</option>
+                        <option value="JAI">JAI - Jaipur International Airport</option>
+                        <option value="LKO">LKO - Chaudhary Charan Singh International Airport, Lucknow</option>
+                        <option value="BBI">BBI - Biju Patnaik International Airport, Bhubaneswar</option>
+                        <option value="IXC">IXC - Chandigarh International Airport</option>
+                        <option value="TRV">TRV - Trivandrum International Airport</option>
+                        <option value="VGA">VGA - Vijayawada International Airport</option>
+                        <option value="IXB">IXB - Bagdogra International Airport</option>
+                        <option value="GWL">GWL - Gwalior Airport</option>
+                        <option value="IXR">IXR - Birsa Munda Airport, Ranchi</option>
+                        <option value="UDR">UDR - Maharana Pratap Airport, Udaipur</option>
+                    </select>
+                </div>
+
+                <div class="flight-selector">
+                    <label>Destination Airport:</label>
+                    <select id="destination">
+                        <option value="DEL">DEL - Indira Gandhi International Airport, Delhi</option>
+                        <option value="BOM">BOM - Chhatrapati Shivaji Maharaj International Airport, Mumbai</option>
+                        <option value="MAA">MAA - Chennai International Airport</option>
+                        <option value="BLR">BLR - Kempegowda International Airport, Bangalore</option>
+                        <option value="HYD">HYD - Rajiv Gandhi International Airport, Hyderabad</option>
+                        <option value="CCU">CCU - Netaji Subhas Chandra Bose International Airport, Kolkata</option>
+                        <option value="PNQ">PNQ - Pune International Airport</option>
+                        <option value="AMD">AMD - Sardar Vallabhbhai Patel International Airport, Ahmedabad</option>
+                        <option value="COK">COK - Cochin International Airport</option>
+                        <option value="GOI">GOI - Manohar International Airport, Goa</option>
+                        <option value="JAI">JAI - Jaipur International Airport</option>
+                        <option value="LKO">LKO - Chaudhary Charan Singh International Airport, Lucknow</option>
+                        <option value="BBI">BBI - Biju Patnaik International Airport, Bhubaneswar</option>
+                        <option value="IXC">IXC - Chandigarh International Airport</option>
+                        <option value="TRV">TRV - Trivandrum International Airport</option>
+                        <option value="VGA">VGA - Vijayawada International Airport</option>
+                        <option value="IXB">IXB - Bagdogra International Airport</option>
+                        <option value="GWL">GWL - Gwalior Airport</option>
+                        <option value="IXR">IXR - Birsa Munda Airport, Ranchi</option>
+                        <option value="UDR">UDR - Maharana Pratap Airport, Udaipur</option>
+                    </select>
+                </div>
+
+                <div class="flight-selector">
+                    <label>&nbsp;</label>
+                    <button onclick="findRoute()">Find Route</button>
+                </div>
+            </div>
+
+            <h3>Result:</h3>
+            <p id="output">Select airports above and click "Find Route" to see results</p>
+
+            <div id="map"></div>
+        </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section class="testimonials" id="testimonials">
+        <div class="section-title">
+            <h2 data-aos="fade-up">What Our Users Say</h2>
+            <p data-aos="fade-up" data-aos-delay="100">Discover how SkyRoute has helped travelers find the best flight
+                routes.</p>
+        </div>
+        <div class="testimonial-slider" data-aos="fade-up" data-aos-delay="200">
+            <div class="testimonial">
+                <div class="testimonial-content">
+                    "SkyRoute saved me hours of planning for my cross-country trip. The map visualization made it easy
+                    to understand my options and choose the best route."
+                </div>
+                <div class="testimonial-author">
+                    <div class="author-avatar">
+                        <img src="/api/placeholder/50/50" alt="User Avatar">
+                    </div>
+                    <div class="author-info">
+                        <h4>Sarah Johnson</h4>
+                        <p>Frequent Traveler</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer id="contact">
+        <div class="footer-content">
+            <a href="#" class="logo">SkyRoute</a>
+            <div class="footer-links">
+                <a href="#home">Home</a>
+                <a href="#features">Features</a>
+                <a href="#flight-finder">Flight Finder</a>
+                <a href="#testimonials">Testimonials</a>
+                <a href="#contact">Contact</a>
+            </div>
+            <div class="social-icons">
+                <a href="#"><i class="fab fa-facebook-f"></i></a>
+                <a href="#"><i class="fab fa-twitter"></i></a>
+                <a href="#"><i class="fab fa-instagram"></i></a>
+                <a href="#"><i class="fab fa-linkedin-in"></i></a>
+            </div>
+            <p class="copyright">© 2025 SkyRoute. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Initialize AOS animation library
+        AOS.init({
+            duration: 800,
+            easing: 'ease-out',
+            once: true
+        });
+
+        // GSAP animations for hero section
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Navbar animation on scroll
+        window.addEventListener('scroll', function () {
+            if (window.scrollY > 50) {
+                document.querySelector('.navbar').classList.add('scrolled');
+            } else {
+                document.querySelector('.navbar').classList.remove('scrolled');
+            }
+        });
+
+        // Mobile menu toggle
+        document.querySelector('.menu-toggle').addEventListener('click', function () {
+            document.querySelector('.nav-links').classList.toggle('active');
+        });
+
+        // Hero animations
+        gsap.to('.fade-up', {
+            y: 0,
+            opacity: 1,
+            duration: 1,
+            stagger: 0.2
+        });
+
+        gsap.to('.hero-image', {
+            opacity: 1,
+            duration: 1.5,
+            delay: 0.5,
+            ease: "power2.out"
+        });
+
+        // Scroll animations with GSAP ScrollTrigger
+        gsap.utils.toArray('.feature-card').forEach((card, i) => {
+            gsap.from(card, {
+                scrollTrigger: {
+                    trigger: card,
+                    start: "top 80%",
+                    toggleActions: "play none none none"
+                },
+                y: 100,
+                opacity: 1,
+                duration: 1,
+                delay: i * 0.1,
+                ease: "power3.out"
+            });
+        });
+
+        // Map initialization
+        let map = L.map('map').setView([20.5937, 78.9629], 5); // Center on India
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        let flightPath;
+        let markers = [];
+
+        function findRoute() {
+            let source = $("#source").val();
+            let destination = $("#destination").val();
+
+            if (source === destination) {
+                $("#output").html("Please select different airports for source and destination.");
+                return;
+            }
+
+            // This would normally call your backend API
+            // For demo purposes, we'll simulate a response
+
+            // Simulate API response
+            const response = simulateRouteResponse(source, destination);
+
+            $("#output").html(`Optimal Path: ${response.path.join(" → ")} <br> Travel Time: ${response.travel_time} minutes`);
+            plotRouteOnMap(response.path);
+        }
+
+        function simulateRouteResponse(source, destination) {
+            // This is a mock function to simulate API response
+            // In a real app, this would be replaced with an actual API call
+
+            // Direct routes
+            if ((source === 'DEL' && destination === 'BOM') || (source === 'BOM' && destination === 'DEL')) {
+                return { path: [source, destination], travel_time: 130 };
+            }
+
+            if ((source === 'BLR' && destination === 'HYD') || (source === 'HYD' && destination === 'BLR')) {
+                return { path: [source, destination], travel_time: 75 };
+            }
+
+            if ((source === 'MAA' && destination === 'CCU') || (source === 'CCU' && destination === 'MAA')) {
+                return { path: [source, destination], travel_time: 140 };
+            }
+
+            if ((source === 'AMD' && destination === 'PNQ') || (source === 'PNQ' && destination === 'AMD')) {
+                return { path: [source, destination], travel_time: 70 };
+            }
+
+            // Routes with one stop
+            if (source === 'DEL' && destination === 'COK') {
+                return { path: [source, 'BOM', destination], travel_time: 250 };
+            }
+
+            if (source === 'GOI' && destination === 'LKO') {
+                return { path: [source, 'JAI', destination], travel_time: 230 };
+            }
+
+            if (source === 'CCU' && destination === 'PNQ') {
+                return { path: [source, 'HYD', destination], travel_time: 240 };
+            }
+
+            if (source === 'TRV' && destination === 'IXB') {
+                return { path: [source, 'VGA', destination], travel_time: 240 };
+            }
+
+            if (source === 'IXR' && destination === 'BBI') {
+                return { path: [source, 'GWL', destination], travel_time: 220 };
+            }
+
+            // Routes with two stops
+            if (source === 'DEL' && destination === 'TRV') {
+                return { path: [source, 'BLR', 'COK', destination], travel_time: 320 };
+            }
+
+            if (source === 'LKO' && destination === 'COK') {
+                return { path: [source, 'HYD', 'BOM', destination], travel_time: 310 };
+            }
+
+            if (source === 'IXB' && destination === 'UDR') {
+                return { path: [source, 'CCU', 'AMD', destination], travel_time: 330 };
+            }
+
+            // Default fallback route (randomized travel time)
+            return {
+                path: [source, 'AMD', destination],
+                travel_time: Math.floor(Math.random() * 200) + 250
+            };
+        }
+
+        function plotRouteOnMap(airports) {
+            let airportCoords = {
+                "DEL": [28.5562, 77.1000],  // Indira Gandhi International Airport, Delhi
+                "BOM": [19.0896, 72.8656],  // Chhatrapati Shivaji Maharaj International Airport, Mumbai
+                "MAA": [12.9941, 80.1709],  // Chennai International Airport
+                "BLR": [13.1986, 77.7066],  // Kempegowda International Airport, Bangalore
+                "HYD": [17.2403, 78.4294],  // Rajiv Gandhi International Airport, Hyderabad
+                "CCU": [22.6547, 88.4467],  // Netaji Subhas Chandra Bose International Airport, Kolkata
+                "PNQ": [18.5822, 73.9197],  // Pune International Airport
+                "AMD": [23.0738, 72.6347],  // Sardar Vallabhbhai Patel International Airport, Ahmedabad
+                "COK": [10.1520, 76.4019],  // Cochin International Airport
+                "GOI": [15.3800, 73.8315],  // Manohar International Airport, Goa
+                "JAI": [26.8252, 75.8122],  // Jaipur International Airport
+                "LKO": [26.7606, 80.8893],  // Chaudhary Charan Singh International Airport, Lucknow
+                "BBI": [20.2444, 85.8178],  // Biju Patnaik International Airport, Bhubaneswar
+                "IXC": [30.6735, 76.7885],  // Chandigarh International Airport
+                "TRV": [8.4821, 76.9207],   // Trivandrum International Airport
+                "VGA": [16.5304, 80.7968],  // Vijayawada International Airport
+                "IXB": [26.6812, 88.3286],  // Bagdogra International Airport
+                "GWL": [26.2933, 78.2278],  // Gwalior Airport
+                "IXR": [23.3143, 85.3219],  // Birsa Munda Airport, Ranchi
+                "UDR": [24.6177, 73.8962]   // Maharana Pratap Airport, Udaipur
+            };
+
+            // Clear existing markers
+            markers.forEach(marker => map.removeLayer(marker));
+            markers = [];
+
+            // Add markers for each airport in the path
+            airports.forEach(code => {
+                const marker = L.marker(airportCoords[code])
+                    .addTo(map)
+                    .bindPopup(`<b>${code}</b>`);
+                markers.push(marker);
+            });
+
+            let coordinates = airports.map(code => airportCoords[code]);
+
+            if (flightPath) {
+                map.removeLayer(flightPath); // Remove existing path
+            }
+
+            flightPath = L.polyline(coordinates, {
+                color: '#4a6cfa',
+                weight: 4,
+                opacity: 0.8,
+                dashArray: '10, 10',
+                lineCap: 'round'
+            }).addTo(map);
+
+            // Add directional arrows
+            const decorator = L.polylineDecorator(flightPath, {
+                patterns: [
+                    {
+                        offset: '5%', repeat: '10%', symbol: L.Symbol.arrowHead({
+                            pixelSize: 15,
+                            pathOptions: { fillOpacity: 1, weight: 0, color: '#4a6cfa' }
+                        })
+                    }
+                ]
+            });
+
+            // Animation for the route
+            gsap.from(flightPath._path, {
+                drawSVG: 0,
+                duration: 1.5,
+                ease: "power3.inOut"
+            });
+
+            map.fitBounds(flightPath.getBounds(), {
+                padding: [50, 50]
+            });
+        }
+
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+
+                const targetId = this.getAttribute('href');
+                const targetElement = document.querySelector(targetId);
+
+                if (targetElement) {
+                    window.scrollTo({
+                        top: targetElement.offsetTop - 80,
+                        behavior: 'smooth'
+                    });
+
+                    // Close mobile menu if open
+                    document.querySelector('.nav-links').classList.remove('active');
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
