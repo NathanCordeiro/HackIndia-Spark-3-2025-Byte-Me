@@ -32,11 +32,12 @@ A web-based application that helps users find the shortest flight path between I
 │   ├── 📄 index.html    # Main HTML file
 │
 ├── 📁 images            # Stores images used in the project
-│   ├── 📄 example.png   # Example image file (replace as needed)
+│   ├── 📄 plane.png     # Favicon image file 
 │
 ├── 📄 app.py            # Flask server file
 ├── 📄 requirements.txt  # Python dependencies
 ├── 📄 README.md         # Project documentation
+├── 📄 .gitignore        # Gitignore file
 ```
 
 ## 🛠️ How to Build and Run
